@@ -1,0 +1,50 @@
+name: GOAT PHITS (2026.10.29_Paper10.1_1e6_PHITS)
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode: {description: 'normal | rescue', required: true, default: 'normal', type: string}
+      jobs: {description: 'rescue: job_id cách nhau dấu phẩy', required: false, default: '', type: string}
+      drive_root: {description: 'Drive root folder id (tham khảo)', required: false, default: '', type: string}
+
+jobs:
+  run:
+    name: Runner ${{ matrix.runner_id }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 340
+    strategy:
+      fail-fast: false
+      matrix:
+        runner_id: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify & extract PHITS (packages/phits_package.tar.gz)
+        shell: bash
+        run: |
+          cd packages && sha256sum -c SHA256SUMS && cd ..
+          mkdir -p /tmp/phits
+          tar -xzf packages/phits_package.tar.gz -C /tmp/phits
+          BIN=$(find /tmp/phits -type f -name phits | head -1)
+          [ -n "$BIN" ] || { echo "Không thấy binary phits"; exit 1; }
+          chmod +x "$BIN"
+          echo "PHITS_BIN=$BIN" >> "$GITHUB_ENV"
+          echo "PHITSPATH=$(dirname "$BIN")" >> "$GITHUB_ENV"
+          sudo apt-get update -qq && sudo apt-get install -y -qq libgomp1
+
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+
+      - name: Python deps
+        run: pip install -q pyyaml pandas openpyxl requests google-api-python-client google-auth google-auth-httplib2
+
+      - name: Run GOAT worker
+        shell: bash
+        env:
+          GDRIVE_OAUTH_JSON: ${{ secrets.GDRIVE_OAUTH_JSON }}
+          GOAT_MODE: ${{ inputs.mode }}
+          GOAT_JOBS: ${{ inputs.jobs }}
+        run: |
+          export OMP_NUM_THREADS=$(nproc)
+          python -u -m goat.worker --account "${{ github.repository_owner }}" \
+            --runner-id ${{ matrix.runner_id }} --mode "$GOAT_MODE" --jobs "$GOAT_JOBS"

@@ -1,0 +1,99 @@
+Paper 1 MCNPX Benchmark Geometry - Material S1 @ 5000 keV, thickness 3 cm
+Setup: Point Source @ 0 cm, Sample Position @ 50 cm, F4 Tally Mesh @ 70 cm
+
+$OMP=1 
+
+[ Parameters ]
+icntl    = 0
+nucdata  = 0
+maxcas   = @PRIMARIES@
+maxbch   = 1
+file(6)  = phits_S1_3cm_5000keV.out
+
+[ Source ]
+totfact  = 1.0
+s-type   = 1
+x0       = 0.0
+y0       = 0.0
+z0       = 0.0
+z1       = 0.0
+proj     = photon
+e0       = 5.000000
+dir      = 1.0
+r0       = 0.0
+
+[ Material ]
+m1    82000.00c  1.0     $ Pb (Lead)
+
+m2    3000.00c    -0.18583
+      5000.00c    -0.13976
+      8000.00c    -0.60120
+      13000.00c   -0.02646
+      14000.00c   -0.04674
+
+[ Surface ]
+10  pz   0.0          $ Source position (z = 0 cm)
+11  pz  10.0          $ Collimator front face (z = 10 cm)
+12  pz  50.0          $ Collimator back face / Sample front face (z = 50 cm)
+13  pz  53.0000       $ Sample back face (thickness 3 cm)
+14  pz  45.0          $ Outer Pb shield front face (z = 45 cm)
+15  pz  70.0          $ F4 Tally detection field front face (z = 70 cm)
+16  pz  72.0          $ F4 Tally detection field back face (z = 72 cm)
+17  pz  75.0          $ Outer Pb shield back face (z = 75 cm)
+
+20  cz   0.5          $ Collimator hole radius (r = 0.5 cm)
+21  cz   3.0          $ Collimator outer radius (r = 3.0 cm)
+22  cz   5.0          $ Glass sample & Detection field radius (r = 5.0 cm)
+23  cz   8.0          $ Outer Pb shield inner radius (r = 8.0 cm)
+24  cz  10.0          $ Outer Pb shield outer radius (r = 10.0 cm)
+99  so 100.0          $ World boundary
+
+[ Cell ]
+$ Collimator bore (hole along z-axis)
+101   0          11 -12 -20
+$ Collimator Pb body
+102   1 -11.34   11 -12 20 -21
+$ Glass sample slot - S1 (rho = 2.3900 g/cm3)
+103   2 -2.3900   12 -13 -22
+$ F4 Tally Mesh detection field (z = 70 to 72 cm, r <= 5 cm)
+104   0          15 -16 -22
+$ Outer Pb shield (z = 45 to 75 cm, 8 <= r <= 10 cm)
+105   1 -11.34   14 -17 23 -24
+$ Free chamber inside Pb shield (excluding collimator, sample, detector)
+106   0          14 -17 -23  #101 #102 #103 #104
+$ Space between source and collimator / shield
+107   0          10 -14 -99  #101 #102
+$ Surrounding space outside shield and collimator inside world
+108   0          -99  #101 #102 #103 #104 #105 #106 #107
+$ Graveyard (outside world)
+110  -1          99
+
+[ Volume ]
+reg   vol
+104   157.0796
+
+[ T-Track ]
+title = Average Photon Flux in Detection Field (F4 equivalent) - S1 @ 5000 keV
+mesh  = reg
+reg   = 104
+part  = photon
+unit  = 1
+e-type = 2
+ne    = 1
+emin  = 0.0
+emax  = 5.250000
+axis  = reg
+file  = track_S1_3cm_5000keV.out
+
+[ T-Track ]
+title = Uncollided Peak Photon Flux in Detection Field - S1 @ 5000 keV
+mesh  = reg
+reg   = 104
+part  = photon
+unit  = 1
+e-type = 2
+ne    = 1
+emin  = 4.950000
+emax  = 5.050000
+axis  = reg
+file  = peak_S1_3cm_5000keV.out
